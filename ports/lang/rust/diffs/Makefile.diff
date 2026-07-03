@@ -1,6 +1,6 @@
---- Makefile.orig	2023-04-15 11:20:15 UTC
+--- Makefile.orig
 +++ Makefile
-@@ -101,8 +101,8 @@ SHEBANG_FILES=		compiler/rustc_codegen_c
+@@ -101,8 +101,8 @@
  
  .include <bsd.port.pre.mk>
  

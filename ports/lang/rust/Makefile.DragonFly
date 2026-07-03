@@ -1,8 +1,8 @@
-MASTER_SITES+=	https://leaf.dragonflybsd.org/~mneumann/rust/:bootstrap \
-		https://leaf.dragonflybsd.org/~mneumann/rust/:bootstrap
+MASTER_SITES+=	https://leaf.dragonflybsd.org/~tuxillo/archive/rust/1.95.0/:bootstrap
 
 # Temporarily specify bootstrap version
-RUST_BOOTSTRAP_VERSION:=	1.84.1
+BOOTSTRAPS_DATE:=		2026-04-16
+RUST_BOOTSTRAP_VERSION:=	1.95.0
 
 # ld.gold will not be able to link std into the rustc driver
 # https://rust-lang.zulipchat.com/#narrow/channel/131828-t-compiler/topic/__rust_alloc_error_handler_should_panic.20not.20defined/with/510296308
