@@ -1,0 +1,3 @@
+port graphics/mesa-dri-gallium
+type mask
+reason "obsolete 21.x-era split; gallium drivers live in graphics/mesa-dri since mesa 22"

@@ -1,0 +1,3 @@
+port graphics/mesa-devel
+type mask
+reason "DragonFly tracks mesa releases only; use graphics/mesa-dri"

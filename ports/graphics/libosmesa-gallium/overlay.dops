@@ -1,0 +1,3 @@
+port graphics/libosmesa-gallium
+type mask
+reason "obsolete 21.x-era split; superseded by graphics/libosmesa"

@@ -1,0 +1,3 @@
+port graphics/llvm-mesa
+type mask
+reason "obsolete: mesa now uses USES=llvm:lib (devel/llvm${LLVM_DEFAULT})"

@@ -1,0 +1,3 @@
+port graphics/mesa-dri-classic
+type mask
+reason "obsolete: classic DRI drivers removed upstream; superseded by graphics/mesa-dri"

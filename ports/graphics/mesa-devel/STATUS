@@ -1,3 +1,2 @@
-PORT
-Last attempt: 25.0.b.2650_1
-Last success: 22.2.b.1392
+MASK
+DragonFly tracks mesa releases only; use graphics/mesa-dri

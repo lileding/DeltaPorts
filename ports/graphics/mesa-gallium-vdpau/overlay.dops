@@ -1,3 +1,3 @@
-port graphics/mesa-gallium-xa
+port graphics/mesa-gallium-vdpau
 type mask
 reason "removed upstream: mesa 26 dropped the gallium VA/VDPAU/XA frontends; FreeBSD deleted the port"

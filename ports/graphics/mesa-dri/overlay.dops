@@ -1,0 +1,58 @@
+port graphics/mesa-dri
+type port
+reason "mesa 26.1.4 with NVK Vulkan driver for DragonFly nvkm; umtx futex and platform patches"
+target @any
+
+# Track the mesa 26.1.4 release (FreeBSD is at 26.1.3).
+text replace-once file Makefile.common from "MESAVERSION=\t26.1.3" to "MESAVERSION=\t26.1.4"
+
+# DragonFly base c++ is gcc 8.3 and cannot compile mesa 26 C++17 code, but
+# Uses/compiler.mk hardcodes a feature list claiming c++17 for the base
+# compiler, so compiler:* USES cannot help.  Force a modern ports GCC for
+# every mesa subport (Makefile.common is shared via MASTERDIR).
+text line-insert-after file Makefile.common anchor "DISTFILES=\tmesa-${MESAVERSION}${EXTRACT_SUFX}" line "USE_GCC_VERSION=${GCC_DEFAULT}"
+
+# fossilize_db.c uses inotify whenever sys/inotify.h is present; on
+# DragonFly that comes from devel/libinotify, which mesa never links
+# (inotify lives in libc on Linux).  Link it at the port level.
+text line-insert-after file Makefile.common anchor "USE_GCC_VERSION=${GCC_DEFAULT}" line "LIB_DEPENDS+=\tlibinotify.so:devel/libinotify"
+text line-insert-after file Makefile.common anchor "LIB_DEPENDS+=\tlibinotify.so:devel/libinotify" line "LDFLAGS+=\t-L${LOCALBASE}/lib -linotify"
+file materialize dragonfly/distinfo -> distinfo
+
+# NVK (nouveau) Vulkan driver: new option; the generic option loop maps it
+# into VULKAN_DRIVERS and OPTIONS_DEFAULT, and PLIST_SUB gains %%nouveau%%.
+text replace-once file Makefile from "OPTIONS_GROUP_VULKAN=\tanv radv swrast_vk" to "OPTIONS_GROUP_VULKAN=\tanv radv swrast_vk nouveau"
+text line-insert-after file Makefile anchor "swrast_vk_DESC=\t\tSoftware Rasterizer Vulkan support" line "nouveau_DESC=\t\tNVIDIA Turing and newer Vulkan support (NVK)"
+text line-insert-after file Makefile anchor "nouveau_DESC=\t\tNVIDIA Turing and newer Vulkan support (NVK)" line "nouveau_BUILD_DEPENDS=\trustc:lang/${RUST_DEFAULT} bindgen:devel/rust-bindgen-cli"
+text line-insert-after file Makefile anchor "nouveau_BUILD_DEPENDS=\trustc:lang/${RUST_DEFAULT} bindgen:devel/rust-bindgen-cli" line "nouveau_MESON_FALSE=\tb_lundef # rust std references environ, same as FreeBSD rusticl"
+
+# NAK (NVK shader compiler) rust crates: meson wrap-file deps served offline
+# through subprojects/packagecache.  Fetch vars must land after the include
+# of Makefile.common, which owns MASTER_SITES/DISTFILES with plain `=`.
+text line-insert-after file Makefile anchor ".include \"${.CURDIR:H:H}/graphics/mesa-dri/Makefile.common\"" line "MASTER_SITES+=\thttps://crates.io/api/v1/crates/paste/1.0.14/download?dummy=/:paste"
+text line-insert-after file Makefile anchor "MASTER_SITES+=\thttps://crates.io/api/v1/crates/paste/1.0.14/download?dummy=/:paste" line "MASTER_SITES+=\thttps://crates.io/api/v1/crates/rustc-hash/2.1.1/download?dummy=/:rhash"
+text line-insert-after file Makefile anchor "MASTER_SITES+=\thttps://crates.io/api/v1/crates/rustc-hash/2.1.1/download?dummy=/:rhash" line "DISTFILES+=\tpaste-1.0.14.tar.gz:paste rustc-hash-2.1.1.tar.gz:rhash"
+text line-insert-after file Makefile anchor "DISTFILES+=\tpaste-1.0.14.tar.gz:paste rustc-hash-2.1.1.tar.gz:rhash" line "EXTRACT_ONLY=\tmesa-26.1.4${EXTRACT_SUFX}"
+
+mk target set post-extract <<'RECIPE'
+	@${MKDIR} ${WRKSRC}/subprojects/packagecache
+	${CP} ${DISTDIR}/paste-1.0.14.tar.gz ${WRKSRC}/subprojects/packagecache/
+	${CP} ${DISTDIR}/rustc-hash-2.1.1.tar.gz ${WRKSRC}/subprojects/packagecache/
+RECIPE
+
+# Packing list entries for NVK
+text line-insert-after file pkg-plist anchor "%%radv%%lib/libvulkan_radeon.so" line "%%nouveau%%lib/libvulkan_nouveau.so"
+text line-insert-after file pkg-plist anchor "%%radv%%share/vulkan/icd.d/radeon_icd.%%ARCH%%.json" line "%%nouveau%%share/vulkan/icd.d/nouveau_icd.%%ARCH%%.json"
+
+# DragonFly source patches (shared by all mesa subports via DFLY_PATCHDIR)
+file materialize dragonfly/patch-meson.build -> dragonfly/patch-meson.build
+file materialize dragonfly/patch-src_egl_main_eglglobals.c -> dragonfly/patch-src_egl_main_eglglobals.c
+file materialize dragonfly/patch-src_gallium_drivers_zink_zink_batch.c -> dragonfly/patch-src_gallium_drivers_zink_zink_batch.c
+file materialize dragonfly/patch-src_nouveau_vulkan_nvk_physical_device.c -> dragonfly/patch-src_nouveau_vulkan_nvk_physical_device.c
+file materialize dragonfly/patch-src_nouveau_vulkan_nvk_wsi.c -> dragonfly/patch-src_nouveau_vulkan_nvk_wsi.c
+file materialize dragonfly/patch-src_util_futex.c -> dragonfly/patch-src_util_futex.c
+file materialize dragonfly/patch-src_util_futex.h -> dragonfly/patch-src_util_futex.h
+file materialize dragonfly/patch-src_util_os_misc.c -> dragonfly/patch-src_util_os_misc.c
+file materialize dragonfly/patch-src_util_u_thread.c -> dragonfly/patch-src_util_u_thread.c
+file materialize dragonfly/patch-src_vulkan_wsi_wsi_common_drm.c -> dragonfly/patch-src_vulkan_wsi_wsi_common_drm.c
+file materialize dragonfly/patch-src_vulkan_wsi_wsi_common_wayland.c -> dragonfly/patch-src_vulkan_wsi_wsi_common_wayland.c

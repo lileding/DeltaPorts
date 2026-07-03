@@ -1,0 +1,3 @@
+port graphics/libosmesa
+type mask
+reason "removed upstream: FreeBSD deleted graphics/libosmesa with mesa 26"
