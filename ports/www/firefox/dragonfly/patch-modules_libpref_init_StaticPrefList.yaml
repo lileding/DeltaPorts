@@ -1,0 +1,65 @@
+--- modules/libpref/init/StaticPrefList.yaml.orig
++++ modules/libpref/init/StaticPrefList.yaml
+@@ -12165,7 +12165,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12209,7 +12209,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12242,7 +12242,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12261,7 +12261,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12280,7 +12280,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12299,7 +12299,7 @@
+   value: true
+ #elif defined(XP_LINUX) && !defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true
+@@ -12327,7 +12327,7 @@
+   value: true
+ #elif defined(XP_LINUX) || defined(ANDROID)
+   value: true
+-#elif defined(XP_FREEBSD)
++#elif defined(XP_FREEBSD) || defined(XP_DRAGONFLY)
+   value: true
+ #elif defined(XP_OPENBSD)
+   value: true

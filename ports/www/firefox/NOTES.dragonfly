@@ -1,0 +1,56 @@
+firefox 152 on DragonFly -- build orchestration not yet folded into the overlay
+=============================================================================
+
+The dragonfly/ patches (auto-applied in the patch phase) cover all *source*
+fixes. The steps below are the build/runtime orchestration that still has to be
+supplied by hand until it is baked into the port. With them, firefox 152 builds
+and runs on Wayland (firefox --version -> Mozilla Firefox 152.0).
+
+1. Compiler
+   USE_GCC_VERSION=13 selects gcc13 for the main compile (set in overlay.dops).
+   Additionally pass on the make command line, because a few host-tool/link
+   steps otherwise fall back to base cc:
+       CC=/usr/local/bin/gcc13 CXX=/usr/local/bin/g++13 CPP=/usr/local/bin/cpp13
+   clang (llvm19) stays in use for bindgen and the wasm sandbox via
+   --with-clang-path and BINARY_ALIAS.
+
+2. bindgen C++ header shim (REQUIRED, else libclang fails on <version>/<bit>)
+   clang's default C++ stdlib is base gcc 8.3's libstdc++ (no C++20 headers);
+   pointing clang at gcc13's headers alone conflicts with DragonFly libc over
+   C-function exception specs. Build a shim once:
+       SHIM=${WRKDIR}/ff-cxx13
+       cp -a /usr/local/lib/gcc13/include/c++/* $SHIM/
+       for h in cstdlib cwchar cstdio cwctype; do
+         sed -i '' -e 's/throw ()//g' -e 's/_GLIBCXX_NOTHROW//g' $SHIM/$h
+       done
+   Then inject into the generated BINDGEN_SYSTEM_FLAGS (config.statusd/substs +
+   config/autoconf.mk), removing buildconfig.rs to force regeneration:
+       -nostdinc++ -isystem $SHIM -isystem $SHIM/x86_64-portbld-dragonfly6.5 \
+       -isystem $SHIM/backward
+   (BINDGEN_CFLAGS env at configure time is the intended hook, but the compat
+   port passes it as a make var which firefox's configure does not read from the
+   environment -- fix that and step 2's injection becomes a one-liner.)
+
+3. wasm2c host tool (RLBox wasm sandbox)
+   dist/host/bin/wasm2c is built with gcc13 (needs GLIBCXX_3.4.31) but the ld
+   hints resolve libstdc++.so.6 to gcc11's first. Wrap it:
+       mv dist/host/bin/wasm2c{,.real}
+       printf '#!/bin/sh\nexport LD_LIBRARY_PATH=/usr/local/lib/gcc13:$LD_LIBRARY_PATH\nexec %s "$@"\n' \
+         .../wasm2c.real > dist/host/bin/wasm2c && chmod +x it
+   Run the whole build with LD_LIBRARY_PATH=/usr/local/lib/gcc13:/usr/local/lib.
+
+4. Installed launcher
+   libxul rpath is /usr/local/lib, but firefox's own libmozgtk.so /
+   libmozwayland.so live in /usr/local/lib/firefox, and the runtime needs
+   gcc13's libstdc++. Replace the /usr/local/bin/firefox symlink with:
+       #!/bin/sh
+       export LD_LIBRARY_PATH=/usr/local/lib/firefox:/usr/local/lib/gcc13:${LD_LIBRARY_PATH}
+       export MOZ_ENABLE_WAYLAND=1
+       exec /usr/local/lib/firefox/firefox "$@"
+   Proper fix: add -Wl,-rpath=/usr/local/lib/firefox and .../gcc13 to the link.
+
+5. Parallelism
+   MAKE_JOBS_NUMBER=12 (32 parallel gcc13 C++ jobs OOM on 32 GB).
+
+Wayland: the session must export WAYLAND_DISPLAY (see start-gnome.sh's
+dbus-update-activation-environment); MOZ_ENABLE_WAYLAND=1 is set by the launcher.

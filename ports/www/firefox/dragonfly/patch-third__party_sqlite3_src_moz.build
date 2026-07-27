@@ -1,0 +1,11 @@
+--- third_party/sqlite3/src/moz.build.orig
++++ third_party/sqlite3/src/moz.build
+@@ -106,6 +106,7 @@
+ # Enabling sqlite math functions
+ DEFINES['SQLITE_ENABLE_MATH_FUNCTIONS'] = True
+-if CONFIG["OS_TARGET"] == "Linux" or CONFIG["OS_TARGET"] == "Android":
++if CONFIG["OS_TARGET"] == "Linux" or CONFIG["OS_TARGET"] == "Android" or \
++        CONFIG["OS_TARGET"] == "DragonFly":
+     OS_LIBS += [
+         "m"
+     ]

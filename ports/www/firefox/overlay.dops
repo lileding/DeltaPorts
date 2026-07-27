@@ -1,41 +1,123 @@
 port www/firefox
 type port
-reason "DragonFly-specific firefox build: PULSEAUDIO/LTO filter, MOZ_OPTIONS, CXXFLAGS, BINARY_ALIAS, dfly-patch"
 target @any
+reason "firefox 152 on DragonFly, Wayland. Builds and runs (firefox --version -> 152.0). Main compiler is ports GCC 13 (USE_GCC_VERSION=13): firefox 152 needs C++20 library headers (<version>/<bit>) that DragonFly's clang-default base gcc 8.3 libstdc++ lacks; gcc13 has them and satisfies firefox's >=10.1 requirement. clang (llvm) is still used for bindgen/wasm via --with-clang-path + BINARY_ALIAS. The wayland-probe sabotage (gtk+-wayland -> waylandz) is dropped so the default wayland gtk3 toolkit builds; webrtc off (sctp); LTO off. Source ports live in dragonfly/ (profiler lwp_gettid/lwp_kill + no-LUL, abseil, mtu cfg, ffvpx getauxval, sqlite -lm, SharedMemory MAP_NORESERVE, libc IP_RECVTOS, libxul memalign/valloc ignore-unresolved). BUILD ORCHESTRATION not yet fully automated (see NOTES.dragonfly): (1) pass CC/CXX/CPP=gcc13 g++13 cpp13 explicitly; (2) bindgen needs a gcc13 C++ header shim (full gcc13 include/c++ tree with throw()/_GLIBCXX_NOTHROW stripped from cstdlib/cwchar/cstdio/cwctype) injected as -nostdinc++ -isystem into BINDGEN_SYSTEM_FLAGS, since clang can't parse DragonFly libc + gcc13 exception specs otherwise; (3) the wasm2c host tool and the installed firefox launcher need LD_LIBRARY_PATH=/usr/local/lib/gcc13 (gcc13 libstdc++.so.6 has GLIBCXX_3.4.31; ld hints prefer gcc11) and the launcher also needs /usr/local/lib/firefox + MOZ_ENABLE_WAYLAND=1; (4) MAKE_JOBS_NUMBER<=12 to avoid OOM at 32 threads on 32GB."
 
-mk eval OPTIONS_DEFAULT "${OPTIONS_DEFAULT:NPULSEAUDIO}"
-mk eval OPTIONS_DEFAULT_x86_64 "${OPTIONS_DEFAULT_x86_64:NLTO}"
+mk set USE_GCC_VERSION "13"
 
-mk add MOZ_OPTIONS --disable-webrtc
-mk add MOZ_OPTIONS "--with-clang-path=${LOCALBASE}/llvm${LLVM_VERSION}/bin/clang"
-mk add MOZ_OPTIONS "--with-libclang-path=${LOCALBASE}/llvm${LLVM_VERSION}/lib"
-mk add CXXFLAGS -Wno-multistatement-macros
-mk add CXXFLAGS -Wno-class-memaccess
+mk eval OPTIONS_DEFAULT "${OPTIONS_DEFAULT:NLTO}"
 
-mk set BINARY_ALIAS "clang=${LOCALBASE}/llvm${LLVM_VERSION}/bin/clang clang++=${LOCALBASE}/llvm${LLVM_VERSION}/bin/clang++ wasm-ld=${LOCALBASE}/llvm${LLVM_VERSION}/bin/wasm-ld"
+mk add MOZ_OPTIONS "--disable-webrtc"
+mk add MOZ_OPTIONS "--enable-forkserver"
+mk add BINARY_ALIAS "clang=${LOCALBASE}/llvm${LLVM_DEFAULT}/bin/clang clang++=${LOCALBASE}/llvm${LLVM_DEFAULT}/bin/clang++ wasm-ld=${LOCALBASE}/llvm${LLVM_DEFAULT}/bin/wasm-ld"
 
-mk target set dfly-patch <<'MK'
-	# disable SCTP
+mk target append post-patch <<'MK'
 	${REINPLACE_CMD} -e 's|MOZ_SCTP|MOZ_DISABLE_SCTP|' \
 		${WRKSRC}/netwerk/moz.build
-	(cd ${WRKSRC}/gfx/angle/checkout/src/compiler/translator && \
-		${REINPLACE_CMD} -e 's|<math.h>|<cmath>|' \
-		InfoSink.h IntermNode.cpp)
+	${REINPLACE_CMD} -e 's|<math.h>|<cmath>|' \
+		${WRKSRC}/gfx/angle/checkout/src/compiler/translator/InfoSink.h \
+		${WRKSRC}/gfx/angle/checkout/src/compiler/translator/IntermNode.cpp
 	${REINPLACE_CMD} -e 's@_XOPEN_SOURCE@&___@g' \
 		${WRKSRC}/media/libcubeb/src/cubeb_alsa.c
 	${REINPLACE_CMD} -e 's@_POSIX_SOURCE@&___@g' \
 		${WRKSRC}/media/libcubeb/src/cubeb_jack.cpp
-	${REINPLACE_CMD} -e 's@gtk+-wayland@&z@g' \
-		${WRKSRC}/toolkit/moz.configure
 MK
 
-file materialize dragonfly/patch-dom_webtransport_api_WebTransportDatagramDuplexStream.cpp -> dragonfly/patch-dom_webtransport_api_WebTransportDatagramDuplexStream.cpp
-file materialize dragonfly/patch-image_imgFrame.h -> dragonfly/patch-image_imgFrame.h
-file materialize dragonfly/patch-media_libcubeb_src_cubeb__jack.cpp -> dragonfly/patch-media_libcubeb_src_cubeb__jack.cpp
-file materialize dragonfly/patch-mozglue_baseprofiler_core_PlatformMacros.h -> dragonfly/patch-mozglue_baseprofiler_core_PlatformMacros.h
-file materialize dragonfly/patch-mozglue_baseprofiler_lul_LulElfInt.h -> dragonfly/patch-mozglue_baseprofiler_lul_LulElfInt.h
-file materialize dragonfly/patch-third__party_libwebrtc_build_build__config.h -> dragonfly/patch-third__party_libwebrtc_build_build__config.h
-file materialize dragonfly/patch-third__party_rust_libc_src_unix_bsd_freebsdlike_dragonfly_mod.rs -> dragonfly/patch-third__party_rust_libc_src_unix_bsd_freebsdlike_dragonfly_mod.rs
-file materialize dragonfly/patch-third__party_rust_quinn-udp_src_unix.rs -> dragonfly/patch-third__party_rust_quinn-udp_src_unix.rs
-file materialize dragonfly/patch-toolkit_library_gen__buildid.py -> dragonfly/patch-toolkit_library_gen__buildid.py
-file materialize dragonfly/patch-toolkit_xre_nsAppRunner.cpp -> dragonfly/patch-toolkit_xre_nsAppRunner.cpp
+file materialize dragonfly/patch-build_moz.configure_flags.configure -> files/patch-build_moz.configure_flags.configure
+file materialize dragonfly/patch-dom_gamepad_moz.build -> files/patch-dom_gamepad_moz.build
+file materialize dragonfly/patch-dom_webtransport_api_WebTransportDatagramDuplexStream.cpp -> files/patch-dom_webtransport_api_WebTransportDatagramDuplexStream.cpp
+file materialize dragonfly/patch-image_imgFrame.h -> files/patch-image_imgFrame.h
+file materialize dragonfly/patch-ipc_glue_SharedMemoryPlatform_posix.cpp -> files/patch-ipc_glue_SharedMemoryPlatform_posix.cpp
+file materialize dragonfly/patch-media_ffvpx_config__unix64.h -> files/patch-media_ffvpx_config__unix64.h
+file materialize dragonfly/patch-media_libcubeb_src_cubeb__jack.cpp -> files/patch-media_libcubeb_src_cubeb__jack.cpp
+file materialize dragonfly/patch-mozglue_baseprofiler_core_ProfilerUtils.cpp -> files/patch-mozglue_baseprofiler_core_ProfilerUtils.cpp
+file materialize dragonfly/patch-mozglue_baseprofiler_core_platform-linux-android.cpp -> files/patch-mozglue_baseprofiler_core_platform-linux-android.cpp
+file materialize dragonfly/patch-mozglue_baseprofiler_public_BaseProfilerUtils.h -> files/patch-mozglue_baseprofiler_public_BaseProfilerUtils.h
+file materialize dragonfly/patch-mozglue_baseprofiler_public_ProfilerPlatformMacros.h -> files/patch-mozglue_baseprofiler_public_ProfilerPlatformMacros.h
+file materialize dragonfly/patch-third__party_abseil-cpp_absl_base_config.h -> files/patch-third__party_abseil-cpp_absl_base_config.h
+file materialize dragonfly/patch-third__party_abseil-cpp_absl_base_internal_sysinfo.cc -> files/patch-third__party_abseil-cpp_absl_base_internal_sysinfo.cc
+file materialize dragonfly/patch-third__party_abseil-cpp_absl_debugging_internal_elf__mem__image.h -> files/patch-third__party_abseil-cpp_absl_debugging_internal_elf__mem__image.h
+file materialize dragonfly/patch-third__party_abseil-cpp_absl_time_internal_cctz_src_time__zone__format.cc -> files/patch-third__party_abseil-cpp_absl_time_internal_cctz_src_time__zone__format.cc
+file materialize dragonfly/patch-third__party_rust_libc_src_unix_bsd_freebsdlike_dragonfly_mod.rs -> files/patch-third__party_rust_libc_src_unix_bsd_freebsdlike_dragonfly_mod.rs
+file materialize dragonfly/patch-third__party_rust_mtu_build.rs -> files/patch-third__party_rust_mtu_build.rs
+file materialize dragonfly/patch-third__party_rust_mtu_src_bsd.rs -> files/patch-third__party_rust_mtu_src_bsd.rs
+file materialize dragonfly/patch-third__party_rust_mtu_src_lib.rs -> files/patch-third__party_rust_mtu_src_lib.rs
+file materialize dragonfly/patch-third__party_sqlite3_src_moz.build -> files/patch-third__party_sqlite3_src_moz.build
+file materialize dragonfly/patch-toolkit_library_gen__buildid.py -> files/patch-toolkit_library_gen__buildid.py
+file materialize dragonfly/patch-tools_profiler_core_ProfilerUtils.cpp -> files/patch-tools_profiler_core_ProfilerUtils.cpp
+file materialize dragonfly/patch-tools_profiler_core_platform-linux-android.cpp -> files/patch-tools_profiler_core_platform-linux-android.cpp
+file materialize dragonfly/patch-tools_profiler_core_platform.cpp -> files/patch-tools_profiler_core_platform.cpp
+file materialize dragonfly/patch-mozglue_misc_Now.cpp -> files/patch-mozglue_misc_Now.cpp
+file materialize dragonfly/patch-toolkit_modules_Troubleshoot.sys.mjs -> files/patch-toolkit_modules_Troubleshoot.sys.mjs# --- DragonFly build orchestration folded into the port (option A) ---
+# firefox's main compiler must be gcc13 consistently: configure, the recursive
+# make, AND the cargo cc-crate build scripts (swgl/mozglue-static). Setting CC
+# here (before bsd.gecko.mk) stops gecko.mk from forcing clang when CC==cc, so
+# cargo picks gcc13 which ships C++20 (<version>) natively -- no shim needed for
+# the compiles, only for bindgen's libclang (see post-configure below).
+mk set CC "${LOCALBASE}/bin/gcc13"
+mk set CXX "${LOCALBASE}/bin/g++13"
+mk set CPP "${LOCALBASE}/bin/cpp13"
+
+# gcc13 host tools (wasm2c) need gcc13's libstdc++.so.6 (GLIBCXX_3.4.31); ld
+# hints otherwise resolve to gcc11 first.
+mk add MAKE_ENV "LD_LIBRARY_PATH=${LOCALBASE}/lib/gcc13:${LOCALBASE}/lib"
+
+# Build the bindgen C++ header shim: gcc13's C++ tree with throw()/
+# _GLIBCXX_NOTHROW stripped from the 4 headers whose exception specs libclang
+# cannot reconcile with DragonFly libc.
+mk target set pre-configure <<'MK'
+	@${MKDIR} ${WRKDIR}/ff-cxx13
+	${CP} -a ${LOCALBASE}/lib/gcc13/include/c++/* ${WRKDIR}/ff-cxx13/
+	@for h in cstdlib cwchar cstdio cwctype; do \
+		${REINPLACE_CMD} -e 's/throw ()//g' -e 's/_GLIBCXX_NOTHROW//g' ${WRKDIR}/ff-cxx13/$$h ; \
+	done
+MK
+
+# Inject the shim into the generated BINDGEN flags (JSON substs read by the
+# mozbuild crate, plus autoconf.mk for the make-level bindgen). Runs every
+# configure, so it survives reconfigure -- unlike the old manual injection.
+mk target set post-configure <<'MK'
+	@cd ${WRKDIR}/.build && ${LOCALBASE}/bin/python3.11 -c 'import json; f="config.statusd/substs/BINDGEN_SYSTEM_FLAGS"; a=json.load(open(f)); a=[x for x in a if "ff-cxx13" not in x]; shim=["-nostdinc++","-isystem","${WRKDIR}/ff-cxx13","-isystem","${WRKDIR}/ff-cxx13/x86_64-portbld-dragonfly6.5","-isystem","${WRKDIR}/ff-cxx13/backward"]; json.dump(a+shim, open(f,"w"), indent=4)'
+	@${REINPLACE_CMD} -e 's|BINDGEN_SYSTEM_FLAGS = |BINDGEN_SYSTEM_FLAGS = -nostdinc++ -isystem ${WRKDIR}/ff-cxx13 -isystem ${WRKDIR}/ff-cxx13/x86_64-portbld-dragonfly6.5 -isystem ${WRKDIR}/ff-cxx13/backward |' ${WRKDIR}/.build/config/autoconf.mk
+MK
+
+# e10s multiprocess is left enabled: the old nsAppRunner force-disable patch
+# is dropped, since its 2020-era slowness/crashes no longer reproduce on the
+# gcc13 firefox 152 build. Fission (site isolation) is defaulted off instead:
+# per-site content-process spawning hits a fork/pthread-atfork crash and is
+# slow on DragonFly. e10s alone fixes DOM fullscreen and session restore.
+mk add PLIST_FILES "lib/firefox/defaults/pref/dragonfly.js"
+file materialize dragonfly/dragonfly.js -> files/dragonfly.js
+mk target append post-install <<'MK'
+	${INSTALL_DATA} ${FILESDIR}/dragonfly.js \
+		${STAGEDIR}${PREFIX}/lib/firefox/defaults/pref/dragonfly.js
+MK
+file materialize dragonfly/patch-ipc_glue_ForkServer.cpp -> files/patch-ipc_glue_ForkServer.cpp
+file materialize dragonfly/patch-toolkit_moz.configure -> files/patch-toolkit_moz.configure
+
+# Enable remote media decoding on DragonFly. StaticPrefList.yaml gates the RDD
+# and Utility process media prefs on XP_FREEBSD (plus WIN/MACOSX/LINUX/OPENBSD/
+# SOLARIS), but DragonFly has no XP_* platform macro of its own -- only XP_UNIX
+# -- so all seven prefs fell through to the #else and defaulted to false.
+# media.utility-process.enabled is additionally Preferences::Lock()-ed at
+# runtime (MediaDecoder.cpp), so no user pref can restore it. With the remote
+# decoders off, content processes report zero codecs and all HTML5 video fails.
+#
+# init.configure gains an XP_DRAGONFLY define (mirroring XP_FREEBSD), and the
+# seven prefs add "|| defined(XP_DRAGONFLY)" so DragonFly defaults like FreeBSD:
+# RDD decodes video, Utility decodes audio. The StaticPrefList #if is evaluated
+# by mozbuild Preprocessor against ALLDEFINES, so it needs a real build define
+# (XP_DRAGONFLY), not the compiler builtin __DragonFly__.
+file materialize dragonfly/patch-build_moz.configure_init.configure -> files/patch-build_moz.configure_init.configure
+file materialize dragonfly/patch-modules_libpref_init_StaticPrefList.yaml -> files/patch-modules_libpref_init_StaticPrefList.yaml
+
+# rtld lazy-binding freeze mitigation: ship bin/firefox as a wrapper script
+# (LD_BIND_NOW=1 + libvpx/libdav1d preload) instead of the symlink to the
+# real binary. DragonFly rtld ignores DT_BIND_NOW, and lazy PLT binding under
+# multiprocess load serializes on the rtld global lock (~30s UI freezes on
+# the first heavy page/video). Full rationale in files/firefox.sh.
+file materialize dragonfly/firefox.sh -> files/firefox.sh
+mk target append post-install <<'MK'
+	${RM} ${STAGEDIR}${PREFIX}/bin/firefox
+	${INSTALL_SCRIPT} ${FILESDIR}/firefox.sh ${STAGEDIR}${PREFIX}/bin/firefox
+MK

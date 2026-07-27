@@ -1,0 +1,11 @@
+--- build/moz.configure/flags.configure.orig
++++ build/moz.configure/flags.configure
+@@ -412,6 +412,8 @@
+             if target.os in ("DragonFly", "FreeBSD", "NetBSD", "OpenBSD"):
+                 if have_linker_support_ignore_unresolved:
+                     ldopts.append("-Wl,--ignore-unresolved-symbol,environ")
++                    ldopts.append("-Wl,--ignore-unresolved-symbol,memalign")
++                    ldopts.append("-Wl,--ignore-unresolved-symbol,valloc")
+                 else:
+                     ldopts.append("-Wl,--warn-unresolved-symbols")
+ 

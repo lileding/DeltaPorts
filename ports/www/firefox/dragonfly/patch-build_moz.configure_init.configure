@@ -1,0 +1,18 @@
+--- build/moz.configure/init.configure.orig
++++ build/moz.configure/init.configure
+@@ -952,6 +952,15 @@
+ 
+ 
+ @depends(target)
++def target_is_dragonfly(target):
++    if target.kernel == "DragonFly":
++        return True
++
++
++set_define("XP_DRAGONFLY", target_is_dragonfly)
++
++
++@depends(target)
+ def target_is_solaris(target):
+     if target.kernel == "SunOS":
+         return True
