@@ -1,0 +1,4 @@
+PORT
+Last attempt: 50.2_2
+Last success: 50.2_2
+Last validation: 2026-07-21 clean package build and installation passed. The old DragonFly librsvg requirement downgrade was removed because librsvg 2.60 satisfies upstream 2.44; the pkg-plist was regenerated from stage and de-duplicated against GLIB_SCHEMAS. The EOG binary has no missing dynamic libraries.

@@ -1,8 +1,10 @@
 port graphics/eog
 type port
-reason "auto-converted from Makefile.DragonFly"
 target @any
+reason "EOG 50.2 matches the GNOME 50 desktop stack; librsvg 2.60 satisfies the upstream requirement"
 
-mk target set dfly-patch <<'MK1'
-	${REINPLACE_CMD} -e '/librsvg/s@2\.44\.@2.40.0@g' ${WRKSRC}/meson.build
-MK1
+mk set DISTVERSION "50.2"
+mk set PORTSCOUT "limit:^50\\."
+mk target remove dfly-patch on-missing error
+file materialize distinfo -> distinfo
+file materialize pkg-plist -> pkg-plist
