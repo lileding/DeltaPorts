@@ -1,0 +1,19 @@
+port www/node24
+type port
+target @any
+reason "node24 needs a real C++20 compiler; DragonFly base gcc 8.3 only offers gnu++2a and compiler:c++20-lang misdetects it as capable. Force ports GCC 13 via USE_GCC_VERSION (same as devel/merve). CRITICAL libstdc++ unification: with gcc13 the V8 objects link libstdc++.so.6, but base-gcc8 shared C++ deps pull libstdc++.so.9 -- two libstdc++ runtimes in one process corrupt V8's Zone allocator and crash mksnapshot in the Turboshaft InstructionSelector (deterministic SIGSEGV, this whole port's hardest bug). node24 bundles NONE of simdjson/gtest/nbytes/ada, so they must stay --shared; devel/simdjson, devel/googletest and www/nbytes get their own USE_GCC_VERSION=13 overlays so they rebuild as .so.6 (ada/merve already are). ICU is the exception -- bundle it via --with-intl=small-icu + --with-icu-source (icu4c-78.2 tarball) so node compiles it with gcc13 and system icu (.so.9, used across the GNOME stack) is left untouched. Plus DragonFly V8 portability patches (abseil, cctz, platform, malloc.h). Trap handler stays at V8's default (unsupported on DragonFly): WASM falls back to explicit bounds checks."
+
+mk set USE_GCC_VERSION "13"
+
+text replace-once file Makefile from "--with-intl=system-icu" to "--with-intl=small-icu"
+text line-insert-after file Makefile anchor "\t\t--with-intl=small-icu \\" line "\t\t--with-icu-source=${DISTDIR}/icu4c-78.2-sources.tgz \\"
+
+file materialize dragonfly/patch-deps_v8_third__party_abseil-cpp_absl_base_internal_sysinfo.cc -> files/patch-deps_v8_third__party_abseil-cpp_absl_base_internal_sysinfo.cc
+file materialize dragonfly/patch-deps_v8_third__party_abseil-cpp_absl_base_config.h -> files/patch-deps_v8_third__party_abseil-cpp_absl_base_config.h
+file materialize dragonfly/patch-deps_v8_third__party_abseil-cpp_absl_debugging_internal_elf__mem__image.h -> files/patch-deps_v8_third__party_abseil-cpp_absl_debugging_internal_elf__mem__image.h
+file materialize dragonfly/patch-deps_v8_third__party_abseil-cpp_absl_time_internal_cctz_src_time__zone__format.cc -> files/patch-deps_v8_third__party_abseil-cpp_absl_time_internal_cctz_src_time__zone__format.cc
+file materialize dragonfly/patch-deps_v8_src_base_platform_platform-freebsd.cc -> files/patch-deps_v8_src_base_platform_platform-freebsd.cc
+file materialize dragonfly/patch-deps_v8_src_base_platform_memory.h -> files/patch-deps_v8_src_base_platform_memory.h
+file materialize dragonfly/patch-deps_v8_src_base_platform_platform-posix.cc -> files/patch-deps_v8_src_base_platform_platform-posix.cc
+file materialize dragonfly/patch-deps_v8_src_trap-handler_handler-inside-posix.h -> files/patch-deps_v8_src_trap-handler_handler-inside-posix.h
+file materialize dragonfly/patch-deps_v8_src_trap-handler_handler-inside-posix.cc -> files/patch-deps_v8_src_trap-handler_handler-inside-posix.cc
