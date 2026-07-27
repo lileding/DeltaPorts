@@ -1,0 +1,9 @@
+port deskutils/gnome-clocks
+type port
+target @any
+reason "GNOME Clocks 50.0 matches the GNOME 50 desktop stack"
+
+mk set PORTVERSION "50.0"
+mk set PORTSCOUT "limit:^50\\."
+file materialize distinfo -> distinfo
+file materialize dragonfly/pkg-plist -> pkg-plist
