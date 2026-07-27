@@ -1,0 +1,8 @@
+port devel/libgudev
+type port
+target @any
+reason "DragonFly carries libgudev 238 ahead of FreeBSD (still 237) for mutter 50 (gudev >= 238); DOCS off to avoid the gtk-doc toolchain"
+
+mk set PORTVERSION "238"
+file materialize distinfo -> distinfo
+mk set OPTIONS_EXCLUDE "DOCS" on-missing noop
