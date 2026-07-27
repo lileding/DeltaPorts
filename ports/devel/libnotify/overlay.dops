@@ -1,0 +1,6 @@
+port devel/libnotify
+type port
+target @any
+reason "libnotify 0.8.8 uses C23 unnamed parameters; build with gcc13 (base gcc80 too old)"
+
+file materialize dragonfly/Makefile -> Makefile
