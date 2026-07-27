@@ -1,0 +1,6 @@
+port x11/libei
+type port
+target @any
+reason "DragonFly peer credentials: LOCAL_PEERCRED exists but SOL_LOCAL is not defined (level is 0) and struct xucred has no pid field; return 0 as the client pid (diagnostic only)"
+
+file materialize dragonfly/patch-src_libeis-socket.c -> files/patch-src_libeis-socket.c
