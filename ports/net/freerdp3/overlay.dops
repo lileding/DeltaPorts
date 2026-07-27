@@ -1,6 +1,9 @@
 port net/freerdp3
 type port
-reason "auto-converted from Makefile.DragonFly"
 target @any
+reason "Build FreeRDP core for GNOME Connections without standalone SDL clients"
 
-mk set DFLY_UNMAINTAINED "yes"
+file materialize dragonfly/Makefile -> Makefile
+file materialize dragonfly/pkg-plist -> pkg-plist
+file materialize dragonfly/files/patch-cmake_FindOSS.cmake -> files/patch-cmake_FindOSS.cmake
+file materialize dragonfly/files/patch-winpr_libwinpr_sysinfo_sysinfo.c -> files/patch-winpr_libwinpr_sysinfo_sysinfo.c
