@@ -1,0 +1,6 @@
+port devel/merve
+type port
+target @any
+reason "merve uses C++20 consteval; DragonFly base gcc 8.3 lacks it and compiler:c++20-lang misdetects base g++ as capable. Force ports GCC 13 via USE_GCC_VERSION, the mesa-proven mechanism for reliably selecting lang/gcc on DragonFly"
+
+mk set USE_GCC_VERSION "13"
