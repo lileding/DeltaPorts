@@ -1,0 +1,4 @@
+PORT
+Last attempt: 1.38.1
+Last success: 1.38.1
+Last validation: 2026-07-21 clean package build and installation passed. The ABI changed from libpeas 1.0 SONAME 0 to 1; the option-aware pkg-plist was updated only for the four shared-library entries, and both pkg-config modules report 1.38.1.

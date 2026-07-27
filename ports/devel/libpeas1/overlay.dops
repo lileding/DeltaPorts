@@ -1,0 +1,9 @@
+port devel/libpeas1
+type port
+target @any
+reason "libpeas 1.38.1 is required by EOG 50.2"
+
+mk set PORTVERSION "1.38.1"
+mk set PORTSCOUT "limit:^1\\.38\\."
+file materialize distinfo -> distinfo
+file materialize pkg-plist -> pkg-plist
