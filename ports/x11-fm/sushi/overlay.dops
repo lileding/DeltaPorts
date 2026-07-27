@@ -1,0 +1,12 @@
+port x11-fm/sushi
+type port
+target @any
+reason "Sushi 50 is the matching GNOME 50 quick-preview release"
+
+mk set PORTVERSION "50.0"
+mk unset PORTREVISION on-missing noop
+mk unset PATCH_SITES
+mk unset PATCHFILES
+mk set PORTSCOUT "limit:^50\\."
+file materialize distinfo -> distinfo
+file materialize pkg-plist -> pkg-plist
