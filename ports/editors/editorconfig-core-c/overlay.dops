@@ -1,6 +1,6 @@
 port editors/editorconfig-core-c
 type port
-reason "auto-converted from Makefile.DragonFly"
+reason "Migrate editorconfig-core-c DragonFly compat and fix the GCC 8 strncpy warning under upstream -Werror"
 target @any
 
 mk eval BUILD_DEPENDS "${BUILD_DEPENDS:Ndoxygen*}"
@@ -10,3 +10,4 @@ mk target set dfly-patch <<'MK1'
 	${CP} -v ${.CURDIR:H}/editorconfig-core-c/pkg-plist ${DFLY_PLIST}
 	${REINPLACE_CMD} -e '/man\/man/d' ${DFLY_PLIST}
 MK1
+file materialize files/patch-src_lib_ini.c -> files/patch-src_lib_ini.c
