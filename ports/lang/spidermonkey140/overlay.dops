@@ -1,0 +1,6 @@
+port lang/spidermonkey140
+type port
+target @any
+reason "DragonFly: mozbuild target triple, bfd linker (ld.gold rejects --icf=safe), XP_UNIX in mozjs pc"
+
+file materialize dragonfly/Makefile -> Makefile
