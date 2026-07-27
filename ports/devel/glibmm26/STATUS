@@ -1,3 +1,4 @@
 PORT
-Last attempt: 2.80.1
-Last success: 2.80.1
+Last attempt: 2.88.1
+Last success: 2.88.1
+Last validation: 2026-07-21 clean package/reinstall and pkg check passed with GCC 13; glibmm-2.68 and giomm-2.68 report 2.88.1 and link libstdc++.so.6 from GCC 13. A System Monitor-style setlocale(LC_ALL, "") smoke passed with the port rpath. 34 of 38 upstream tests passed and 2 are upstream expected failures. The remaining format test omits locale initialization; the external TLS test reports zero trusted anchors despite ca_root_nss being installed and is outside this port's desktop binding scope.
