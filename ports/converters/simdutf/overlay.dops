@@ -1,6 +1,7 @@
 port converters/simdutf
 type port
-reason "auto-converted from Makefile.DragonFly"
 target @any
+reason "Rebuild with ports GCC 13 so libsimdutf links libstdc++.so.6, not base gcc8 libstdc++.so.9. simdutf is pulled by www/node24 (directly and via devel/merve); mixing .so.9 with node24 gcc13 .so.6 corrupts V8 Zone -> mksnapshot SIGSEGV. Unmaintained gate stays lifted; TOOLS excluded (sutf/fastbase64 std::filesystem, unneeded)."
 
-mk set DFLY_UNMAINTAINED "yes"
+mk set USE_GCC_VERSION "13"
+mk set OPTIONS_EXCLUDE "TOOLS" on-missing noop
