@@ -1,0 +1,6 @@
+port shells/bash-completion
+type port
+target @any
+reason "drop stale completion plist entries (pkg_deinstall/pkg_delete/pkg_info/portinstall/portsnap/portupgrade) upstream no longer ships"
+
+file materialize dragonfly/pkg-plist -> pkg-plist
