@@ -1,6 +1,8 @@
 port graphics/mesa-libs
 type port
-reason "auto-converted from Makefile.DragonFly"
 target @any
+reason "self-contained mesa 26.1.4 + NVK Vulkan for DragonFly nvkm. The @2026Q2 base is mesa 24.1.7, whose port skeleton differs across 24->26 (pkg-plist/options/patches), so ship the complete 26.1.4 port from newport/ (mesa26 delta composed against a mesa-26.1.3 base) rather than a version bump."
 
-mk add MESON_ARGS "-Dmicrosoft-clc=disabled"
+file materialize newport/Makefile -> Makefile
+file materialize newport/pkg-descr -> pkg-descr
+file materialize newport/pkg-plist -> pkg-plist
